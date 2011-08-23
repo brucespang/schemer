@@ -1,4 +1,4 @@
-This is a half decent scheme-like programming language. *Please* do not use it for anything important.
+This is a half decent scheme-like programming language. __Please__ do not use it for anything important.
 
 Getting Started
 ==============
