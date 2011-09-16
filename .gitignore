@@ -1,0 +1,6 @@
+target/**
+project/boot/**
+project/build/target/**
+project/target/**
+lib_managed/**
+lisp/**
