@@ -4,3 +4,4 @@ project/build/target/**
 project/target/**
 lib_managed/**
 lisp/**
+tags

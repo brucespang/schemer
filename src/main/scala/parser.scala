@@ -8,6 +8,8 @@ object Parser {
   type AST = List[Any]
 }
 
+class MismatchedException extends Exception
+
 class Parser {
   import Parser.AST
 
@@ -15,17 +17,20 @@ class Parser {
     _parse(tokens, List())._1
   }
 
-  protected def _parse(tokens:List[Token], list:AST):(AST, List[Token]) = {
+  protected def _parse(tokens:List[Token], list:AST, level:Int=0):(AST, List[Token]) = {
     tokens match {
       case ParenToken('open) :: tail =>
-        val (parsed, rest) = _parse(tail, List())
-        _parse(rest, parsed :: list)
+        val (parsed, rest) = _parse(tail, List(), level + 1)
+        _parse(rest, parsed :: list, level)
       case ParenToken('close) :: tail => 
         (list.reverse, tail)
       case token :: tail =>
         _parse(tail, token :: list)
       case List() =>
-        (list, List())
+        level match {
+          case 0 => (list, List())
+          case _ => throw new MismatchedException
+        }
     }
   }
 }

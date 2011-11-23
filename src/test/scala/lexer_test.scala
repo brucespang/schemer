@@ -21,7 +21,7 @@ class LexerTest extends Spec {
     expect(List(FalseToken())) { lexer.lex(text) }
 
     text = "1"
-    expect(List(IntToken(1))) { lexer.lex(text) }
+    expect(List(DecimalToken(1))) { lexer.lex(text) }
 
     text = "1.0"
     expect(List(DecimalToken(1.0))) { lexer.lex(text) }
@@ -30,13 +30,16 @@ class LexerTest extends Spec {
     expect(List(WordToken(text))) { lexer.lex(text) }
 
     text = "*"
-    expect(List(PunctuationToken(text))) { lexer.lex(text) }
+    expect(List(WordToken(text))) { lexer.lex(text) }
+
+    text = "null"
+    expect(List(NullToken())) { lexer.lex(text) }
   }
 
   it("should lex a series of tokens properly") {
     val text = "(+ 1 2)"
 
-    expect(List(ParenToken('open), PunctuationToken("+"), IntToken(1), IntToken(2), ParenToken('close))) { (new Lexer).lex(text) }
+    expect(List(ParenToken('open), WordToken("+"), DecimalToken(1), DecimalToken(2), ParenToken('close))) { (new Lexer).lex(text) }
   }
 
   it("should ignore comments") {
@@ -53,5 +56,9 @@ class LexerTest extends Spec {
 
   it("should lex slashes in strings") {
     expect(List(StringToken("\\"))) { (new Lexer).lex("\"\\\\\"")}
+  }
+
+  it("should lex a symbol") {
+    expect(List(SymbolToken("abc"))) { (new Lexer).lex("'abc") }
   }
 }

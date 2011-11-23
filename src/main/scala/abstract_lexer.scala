@@ -11,14 +11,14 @@ trait AbstractLexer {
   // If the result of the handler is a lexer, we start lexing from the rest of the string,
   // and append the result of the sublexer to the list of tokens
   // Otherwise, we append the token to the list of tokens.
-  type Handler = Function1[String, Either[AbstractLexer, Token]]
+  type Handler = (String => Either[AbstractLexer, Token])
 
   // ListMap to preserve the order of the patterns for predictable overriding behavior
   protected var patterns = ListMap[Regex,Handler]()
 
   def pattern(pattern:Regex) = {
     { handler:Handler =>
-      val newPattern = ("(" + pattern + ")").r
+      val newPattern = ("^(" + pattern + ")").r
       patterns.update(newPattern, handler)
     }
   }
@@ -55,11 +55,9 @@ trait AbstractLexer {
   }
 
   protected def longestSubstring(string:String, pattern:Regex):String = {
-    // starting from the end of the string, iterate until we find a match
-    string match {
-      case "" => return ""
-      case pattern(_) => return string
-      case _ => longestSubstring(string.init, pattern)
+    pattern.findAllIn(string).toList.sortBy(_.length) match {
+      case List() => ""
+      case longest :: rest => longest
     }
   }
 
