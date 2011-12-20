@@ -7,28 +7,20 @@ object REPL {
   val interpreter = new Interpreter
 
   def main(args: Array[String]):Unit = {
-    if(args.length > 0)
-      println(epl(args.mkString(" ")))
-    else
-      run()
-  }
-
-  def run(currentCommand:String=""):Unit = {
-    val prompt = if(currentCommand.length > 0) "  | " else ">> "
-    val command = readLine(prompt)
-
-    try {
-      println(epl(command + currentCommand))
-      run()
-    } catch {
-      case e:MismatchedException => run(command + currentCommand)
+    if(args.length > 0) {
+      args.foreach { file =>
+        val source = scala.io.Source.fromFile(file)
+        val program = source.mkString
+        source.close()
+        run(program)
+      }
+    } else {
+      val program = io.Source.stdin.getLines.mkString
+      run(program)
     }
   }
 
-  protected def epl(command:String) = {
-    val tokens = lexer.lex(command)
-    val ast = parser.parse(tokens)
-
-    interpreter.evalSeq(ast)
+  def run(program:String):Unit = {
+    interpreter.evalSeq(parser.parse(lexer.lex(program)))
   }
 }

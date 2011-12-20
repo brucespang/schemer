@@ -148,7 +148,9 @@ class Interpreter {
   }
 
   def evalSeq(expressions:List[Any], env:Environment=RootEnvironment):Any = {
-    expressions.map(eval(_, env)).last
+    val results = expressions.map(eval(_, env))
+    if(results.length > 0)
+      results.last
   }
 
   def makeIf(clause:Any, then:Any, consequent:Any) = List(WordToken("if"), clause, then, consequent)

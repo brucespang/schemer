@@ -14,7 +14,7 @@ class Parser {
   import Parser.AST
 
   def parse(tokens:List[Token]):AST = {
-    _parse(tokens, List())._1
+    _parse(tokens, List())._1.reverse
   }
 
   protected def _parse(tokens:List[Token], list:AST, level:Int=0):(AST, List[Token]) = {
