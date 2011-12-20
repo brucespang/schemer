@@ -8,7 +8,7 @@ object REPL {
 
   def main(args: Array[String]):Unit = {
     if(args.length > 0)
-      epl(args.mkString(" "))
+      println(epl(args.mkString(" ")))
     else
       run()
   }

@@ -1,0 +1,2 @@
+#!/bin/bash
+java -classpath $SCALA_HOME/libexec/lib/scala-library.jar:target/scala-2.9.1/classes REPL $@
