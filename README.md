@@ -29,3 +29,4 @@ Notable things that aren't implemented:
 * `set!` and its derivatives
 * Decent backtraces
 * Loading of external files.
+* Macros
