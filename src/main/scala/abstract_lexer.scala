@@ -28,25 +28,25 @@ trait AbstractLexer {
   }
 
   def incompleteLex(text:String, tokens:List[Token]=List()):Tuple2[List[Token], String] = {
-    text match {
-      case "" => handleLexFinish(text, tokens)
-      case _ =>
+    (text, tokens) match {
+      case ("", _) =>
+        handleLexFinish(text, tokens)
+      case (_, (token:HaltingToken) :: restTokens) =>
+        handleLexFinish(text, restTokens)
+      case (_,_) =>
         val (pattern, string) = patternWithLongestMatch(text, patterns.keys.toList)
 
         val restText = text.substring(string.length, text.length)
 
-        patterns(pattern)(string) fold (
+        val (newText, newTokens) = patterns(pattern)(string) fold (
           { lexer =>
             val (returnedTokens, returnedText) = lexer.incompleteLex(restText, tokens)
-            incompleteLex(returnedText, tokens ::: returnedTokens)
+            (returnedText, tokens ::: returnedTokens)
           },
-          { token =>
-            token match {
-              case t: HaltingToken => handleLexFinish(restText, tokens)
-              case _ => incompleteLex(restText, token :: tokens)
-            }
-          }
+          { token => (restText, (token :: tokens)) }
         )
+
+        incompleteLex(newText, newTokens)
     }
   }
 
