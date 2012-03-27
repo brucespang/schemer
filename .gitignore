@@ -5,3 +5,8 @@ project/target/**
 lib_managed/**
 lisp/**
 tags
+.DS_Store
+\#*#
+\.#*
+*\~
+.dir-locals.el

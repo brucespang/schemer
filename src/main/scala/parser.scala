@@ -1,36 +1,52 @@
 package lisp
 
-import lisp.tokens._
+import lisp.ast._
 
-object Parser {
-  // This is a super hackish type, but I can't figure out how to express type that is
-  // a list of either tokens or itself.
-  type AST = List[Any]
-}
+import com.codecommit.gll._
+import com.codecommit.gll.ast._
 
-class MismatchedException extends Exception
+class Parser extends RegexParsers {
 
-class Parser {
-  import Parser.AST
+  import Filters._
 
-  def parse(tokens:List[Token]):AST = {
-    _parse(tokens, List())._1.reverse
+  lazy val expr: Parser[Expr] = (
+	"(" ~ "lambda" ~ "(" ~ valList ~ ")" ~ expr ~ ")" ^^ { (_,_,_,args,_,body,_) => Abs(args, body) }
+	| "(" ~ "lambda" ~ "(" ~ ")" ~ expr ~ ")" ^^ { (_,_,_,_,body,_) => Abs(List(), body) }
+	| "(" ~ "if" ~ expr ~ expr ~ expr ~ ")" ^^ { (_,_,pred,cons,alt,_) => If(pred,cons,alt) }
+	| "(" ~ "if" ~ expr ~ expr ~ ")" ^^ { (_,_,pred,cons,_) => If(pred,cons) }
+	| """(-)?\d+""".r ^^ { d => Int(d.toInt) }
+	| "(" ~ expr ~ exprList ~ ")" ^^ { (_,fun,arg,_) => App(fun, arg) }
+	| "(" ~ expr ~ ")"            ^^ { (_,fun,_) => App(fun, List()) }
+	| "null" ^^ { _ => Null() }
+	| "#t" ^^ { _ => True() }
+	| "#f" ^^ { _ => False() }
+	| value
+  ) filter ( _ match {
+    // Ignore applications of something to lambda, since those are actually abstractions
+	case App(Val("lambda"), _) => false
+	case App(Val("if"), _) => false
+	case Val("#t") => false
+	case Val("#f") => false
+	case Val("null") => false
+	case _ => true
+  })
+
+  lazy val exprList: Parser[List[Expr]] = (
+	  expr            ^^ { _ :: Nil }
+	| expr ~ exprList ^^ { (x,xs) => x :: xs }
+  )
+
+  lazy val valList: Parser[List[Val]] = (
+	  value           ^^ { _ :: Nil }
+	| value ~ valList ^^ { (x,xs) => x :: xs }
+  )
+  
+  val startRegex = "A-Za-z\\!\\@\\#\\$\\%\\^\\&\\*\\-\\=\\_\\+\\<\\>\\.\\?\\/"
+  val restRegex = "0-9"
+  lazy val value: Parser[Val] = {
+	("[" + startRegex + "][" + restRegex + startRegex + "]*").r ^^ { Val(_) }
   }
 
-  protected def _parse(tokens:List[Token], list:AST, level:Int=0):(AST, List[Token]) = {
-    tokens match {
-      case ParenToken('open) :: tail =>
-        val (parsed, rest) = _parse(tail, List(), level + 1)
-        _parse(rest, parsed :: list, level)
-      case ParenToken('close) :: tail => 
-        (list.reverse, tail)
-      case token :: tail =>
-        _parse(tail, token :: list)
-      case List() =>
-        level match {
-          case 0 => (list, List())
-          case _ => throw new MismatchedException
-        }
-    }
-  }
+  def parser = expr
+
 }

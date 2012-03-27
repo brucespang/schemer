@@ -1,10 +1,8 @@
-import lisp.{Lexer, Parser, Interpreter}
+import lisp.Parser
 import lisp.MismatchedException
 
 object REPL {
-  val lexer = new Lexer
   val parser = new Parser
-  val interpreter = new Interpreter
 
   def main(args: Array[String]):Unit = {
     if(args.length > 0) {
@@ -21,6 +19,6 @@ object REPL {
   }
 
   def run(program:String):Unit = {
-    interpreter.evalSeq(parser.parse(lexer.lex(program)))
+    parser.parser(program)
   }
 }
