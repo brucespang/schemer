@@ -24,11 +24,71 @@ object RootEnvironment extends Environment {
   override def lookup(value:Val):Expr = bindings.getOrElse(value, value)
 }
 
-class Compiler {
+trait Emitter {
+  def emit(expr:Expr):String
+}
+
+trait CEmitter extends Emitter {
+  def emit(expr:Expr):String = {
+	expr match {
+	  case Progn(main :: defs) =>
+		val mainFun = EmitFunction(EmitValue("int"), EmitValue("main"), List(), emit(main))
+		EmitProgn(EmitHeader() :: (defs.reverse.map(emit(_)) ::: List(mainFun)))
+	  case App(Val("define"), List(Val(name), Abs(args, body))) =>
+		EmitFunction(EmitValue("schemerVal"), EmitValue(name), args.map(emit(_).asInstanceOf[EmitValue]), emit(body))
+	  case App(fun, args) =>
+		EmitApp(emit(fun).asInstanceOf[EmitValue], args.map(emit(_)))
+	  case If(pred, cons, alt) =>
+		EmitIf(emit(pred), emit(cons), emit(alt))
+	  case Val(value) =>
+		EmitValue(value)
+	  case Int(num) => EmitInt(num)
+	  case True() => EmitTrue()
+	  case False() => EmitFalse()
+	  case Null() => EmitNull()
+	}
+  }
+}
+
+trait EmitExpr
+case class EmitTrue extends EmitExpr {
+  override def toString = "TRUE"
+}
+case class EmitFalse extends EmitExpr {
+  override def toString = "FALSE"
+}
+case class EmitNull extends EmitExpr {
+  override def toString = "NULL"
+}
+case class EmitValue(name:String) extends EmitExpr {
+  override def toString = name
+  def toStringWithType = "schemerVal " + toString
+}
+case class EmitInt(num:Integer) extends EmitExpr {
+  override def toString = num.toString
+  def toStringWithType = "int " + toString
+}
+case class EmitFunction(t:EmitValue, name:EmitValue, args:List[EmitValue], body:EmitExpr) extends EmitExpr {
+  override def toString = t + " " + name + "(" + args.map(_.toStringWithType).mkString(", ") + ")" + "{" + body.toString + "}\n"
+}
+case class EmitApp(fun:EmitValue, args:List[EmitExpr]) extends EmitExpr {
+  override def toString = fun + "(" + args.map(_.toString).mkString(", ") + ");"
+}
+case class EmitIf(pred:EmitExpr, cons:EmitExpr, alt:EmitExpr) extends EmitExpr {
+  override def toString = "if(schemerIsTrue(" + pred.toString + ")){"+cons.toString+"} else { " + alt.toString + " } "
+}
+case class EmitProgn(exprs:List[EmitExpr]) extends EmitExpr {
+  override def toString = exprs.map(_.toString).mkString("\n")
+}
+case class EmitHeader extends EmitExpr {
+  override def toString = "#include \"schemer.h\""
+}
+
+class Compiler(emitter:Emitter) {
   val parser = new Parser
 
-  def compile(expr:Expr):Expr = {
-	hoist(toCPS(curry(desugar(expr)), Val("halt")))
+  def compile(expr:Expr):String = {
+	emitter.emit(hoist(toCPS(curry(desugar(expr)), Val("halt")))).toString
   }
 
   def parse(code:String):Expr = {
@@ -131,6 +191,6 @@ class Compiler {
   }
 
   protected def genUniqueVal(name:String):Val = {
-	Val(name + "-" + UUID.randomUUID().toString)
+	Val(name + "_" + UUID.randomUUID().toString.replaceAll("-", "_"))
   }
 }
